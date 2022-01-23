@@ -46,8 +46,10 @@ extern FILE *statefile;
 
 
 @interface CalcView : UIView {
-    //
+    UITextField *alphaField;
 }
+
+@property (nonatomic, retain) IBOutlet UITextField *alphaField;
 
 - (void) awakeFromNib;
 - (void) layoutSubviews;
@@ -68,5 +70,7 @@ extern FILE *statefile;
 - (void) cancelRepeater;
 + (void) stopTextPrinting;
 + (void) stopGifPrinting;
+- (IBAction) alphaChanged;
+- (IBAction) alphaEnter;
 
 @end

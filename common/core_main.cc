@@ -185,8 +185,6 @@ bool core_hex_menu() {
     return get_front_menu() == MENU_BASE_A_THRU_F;
 }
 
-static int ascii2hp(char *dst, int dstlen, const char *src, int srclen = -1);
-
 int core_special_menu_key(int which) {
     return special_menu_key(which);
 }
@@ -2899,7 +2897,7 @@ static bool parse_phloat(const char *p, int len, phloat *res) {
 /* NOTE: The destination buffer should be able to store dstlen + 4
  * characters, because of how we parse [LF] and [ESC].
  */
-static int ascii2hp(char *dst, int dstlen, const char *src, int srclen /* = -1 */) {
+int ascii2hp(char *dst, int dstlen, const char *src, int srclen /* = -1 */) {
     int srcpos = 0, dstpos = 0;
     // state machine for detecting [LF] and [ESC]:
     // 0: ''

@@ -778,10 +778,13 @@ void skin_update_annunciator(int which, int state, CalcView *view) {
     [view setNeedsDisplayInRect:CGRectMake(r->x / skin_scale_h + skin_offset_h, r->y / skin_scale_v + skin_offset_v, r->width / skin_scale_h, r->height / skin_scale_v)];
 }
     
-bool skin_in_menu_area(int x, int y) {
+int skin_in_control_area(int x, int y) {
+    // 0: nothing 1: menu 2: keyboard toggle
     x = (x - skin_offset_h) * skin_scale_h;
     y = (y - skin_offset_v) * skin_scale_v;
-    return y < display_loc.y + display_scale.y * 8;
+    if (y >= display_loc.y + display_scale.y * 8)
+        return 0;
+    return x >= skin_width / 2 ? 1 : 2;
 }
 
 void skin_find_key(int x, int y, bool cshift, int *skey, int *ckey) {

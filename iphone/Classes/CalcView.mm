@@ -164,6 +164,8 @@ static CalcView *calcView = nil;
 
 @implementation CalcView
 
+@synthesize alphaField;
+
 
 - (id) initWithFrame:(CGRect)frame {
     TRACE("initWithFrame");
@@ -288,8 +290,17 @@ static CGPoint touchPoint;
     if (ckey == 0) {
         skin_find_key(x, y, ann_shift != 0, &skey, &ckey);
         if (ckey == 0) {
-            if (skin_in_menu_area(x, y))
+            int m = skin_in_control_area(x, y);
+            if (m == 1)
                 [self showMainMenu];
+            else if (m == 2) {
+                if (alphaField.isFirstResponder)
+                    [alphaField resignFirstResponder];
+                else {
+                    alphaField.text = @"x";
+                    [alphaField becomeFirstResponder];
+                }
+            }
         } else {
             if (state.keyClicks > 0)
                 [RootViewController playSound:state.keyClicks + 10];
@@ -674,6 +685,45 @@ static CLLocationManager *locMgr = nil;
             ann_print_timeout_active = TRUE;
         }
     }
+}
+
+- (IBAction) alphaChanged {
+    NSString *s = alphaField.text;
+    if ([s length] > 1) {
+        // TODO: Keymap, A..F menu, cursor keys & DEL...
+        // This is ALPHA only, for now, and doesn't deal
+        // with non-ASCII characters, which it should,
+        // if only for the letters with umlauts.
+        // The keymap stuff, hex menu, and cursor keys,
+        // may seem redundant, but they make perfect sense
+        // for people using hardware keyboards.
+        s = [s substringFromIndex:([s length] - 1)];
+        char hpchar[5];
+        int hplen = ascii2hp(hpchar, 1, [s UTF8String]);
+        if (hplen != 1) {
+            squeak();
+            return;
+        }
+        ckey = 1024 + hpchar[0];
+        goto do_key;
+    } else if ([s length] < 1) {
+        ckey = KEY_BSP;
+        do_key:
+        skey = -1;
+        macro = NULL;
+        shell_keydown();
+        shell_keyup();
+        alphaField.text = @"x";
+    }
+}
+
+- (IBAction) alphaEnter {
+    ckey = KEY_ENTER;
+    skey = -1;
+    macro = NULL;
+    shell_keydown();
+    shell_keyup();
+    [alphaField resignFirstResponder];
 }
 
 @end

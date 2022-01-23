@@ -343,6 +343,7 @@ extern int repeating_key;
 /* Other functions */
 /*******************/
 
+int ascii2hp(char *dst, int dstlen, const char *src, int srclen = -1);
 void set_alpha_entry(bool state);
 void set_running(bool state);
 bool program_running();
