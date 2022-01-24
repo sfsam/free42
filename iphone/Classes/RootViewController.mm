@@ -93,6 +93,7 @@ static RootViewController *instance;
     // relevant; see the preferredStatusBarStyle method, below.
     [self.view setBackgroundColor:UIColor.blackColor];
     
+    [calcView setActive:true];
     [window makeKeyAndVisible];
     window.rootViewController = self;
 }
@@ -206,6 +207,7 @@ void shell_message(const char *message) {
 
 - (void) showMain2 {
     [self.view bringSubviewToFront:calcView];
+    [calcView setActive:true];
 }
 
 + (void) showMain {
@@ -213,6 +215,7 @@ void shell_message(const char *message) {
 }
 
 - (void) showPrintOut2 {
+    [calcView setActive:false];
     [self.view bringSubviewToFront:printView];
 }
 
@@ -222,6 +225,7 @@ void shell_message(const char *message) {
 
 - (void) showHttpServer2 {
     [httpServerView raised];
+    [calcView setActive:false];
     [self.view bringSubviewToFront:httpServerView];
 }
 
@@ -231,6 +235,7 @@ void shell_message(const char *message) {
 
 - (void) showSelectSkin2 {
     [selectSkinView raised];
+    [calcView setActive:false];
     [self.view bringSubviewToFront:selectSkinView];
 }
 
@@ -240,6 +245,7 @@ void shell_message(const char *message) {
 
 - (void) showPreferences2 {
     [preferencesView raised];
+    [calcView setActive:false];
     [self.view bringSubviewToFront:preferencesView];
 }
 
@@ -249,6 +255,7 @@ void shell_message(const char *message) {
 
 - (void) showAbout2 {
     [aboutView raised];
+    [calcView setActive:false];
     [self.view bringSubviewToFront:aboutView];
 }
 
@@ -258,6 +265,7 @@ void shell_message(const char *message) {
 
 - (void) showSelectFile2 {
     [selectFileView raised];
+    [calcView setActive:false];
     [self.view bringSubviewToFront:selectFileView];
 }
 
@@ -275,11 +283,13 @@ void shell_message(const char *message) {
 
 + (void) doExport:(BOOL)share {
     [instance.selectProgramsView raised:share];
+    [instance.calcView setActive:false];
     [instance.self.view bringSubviewToFront:instance.selectProgramsView];
 }
 
 - (void) showLoadSkin2 {
     [loadSkinView raised];
+    [calcView setActive:false];
     [self.view bringSubviewToFront:loadSkinView];
 }
 
@@ -293,6 +303,7 @@ void shell_message(const char *message) {
         [statesView selectState:stateName];
         [stateName release];
     }
+    [calcView setActive:false];
     [self.view bringSubviewToFront:statesView];
 }
 
@@ -302,6 +313,7 @@ void shell_message(const char *message) {
 
 - (void) showDeleteSkin2 {
     [deleteSkinView raised];
+    [calcView setActive:false];
     [self.view bringSubviewToFront:deleteSkinView];
 }
 

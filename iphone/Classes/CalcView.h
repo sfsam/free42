@@ -17,7 +17,7 @@
 
 #import <UIKit/UIKit.h>
 
-#define SHELL_VERSION 9
+#define SHELL_VERSION 10
 #define FILENAMELEN 1024
 
 struct state_type {
@@ -39,6 +39,7 @@ struct state_type {
     bool matrix_outofrange;
     bool auto_repeat;
     bool allow_big_stack;
+    int keyboardMode; // 0=off 1=alpha 2=on
 };
 
 extern state_type state;
@@ -70,6 +71,8 @@ extern FILE *statefile;
 - (void) cancelRepeater;
 + (void) stopTextPrinting;
 + (void) stopGifPrinting;
+- (void) setActive:(bool) active;
+- (void) updateKeyboardState;
 - (IBAction) alphaChanged;
 - (IBAction) alphaEnter;
 

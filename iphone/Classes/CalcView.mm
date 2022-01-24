@@ -290,17 +290,8 @@ static CGPoint touchPoint;
     if (ckey == 0) {
         skin_find_key(x, y, ann_shift != 0, &skey, &ckey);
         if (ckey == 0) {
-            int m = skin_in_control_area(x, y);
-            if (m == 1)
+            if(skin_in_menu_area(x, y))
                 [self showMainMenu];
-            else if (m == 2) {
-                if (alphaField.isFirstResponder)
-                    [alphaField resignFirstResponder];
-                else {
-                    alphaField.text = @"x";
-                    [alphaField becomeFirstResponder];
-                }
-            }
         } else {
             if (state.keyClicks > 0)
                 [RootViewController playSound:state.keyClicks + 10];
@@ -687,24 +678,65 @@ static CLLocationManager *locMgr = nil;
     }
 }
 
+bool viewActive = false;
+bool keyboardActive = false;
+
 - (IBAction) alphaChanged {
     NSString *s = alphaField.text;
     if ([s length] > 1) {
-        // TODO: Keymap, A..F menu, cursor keys & DEL...
-        // This is ALPHA only, for now, and doesn't deal
-        // with non-ASCII characters, which it should,
-        // if only for the letters with umlauts.
-        // The keymap stuff, hex menu, and cursor keys,
-        // may seem redundant, but they make perfect sense
-        // for people using hardware keyboards.
         s = [s substringFromIndex:([s length] - 1)];
         char hpchar[5];
         int hplen = ascii2hp(hpchar, 1, [s UTF8String]);
-        if (hplen != 1) {
+        if (hplen != 1 || hpchar[0] == 31 && [s characterAtIndex:0] != 0x2022) {
             squeak();
             return;
         }
-        ckey = 1024 + hpchar[0];
+        unsigned char hc = hpchar[0];
+        if (core_alpha_menu()) {
+            ckey = 1024 + hc;
+        } else if (core_hex_menu() && hc >= 'A' && hc <= 'F') {
+            ckey = hc - 'A' + 1;
+        } else {
+            switch (hc) {
+                // TODO: Proper shift handling; some way to map G and P
+                case 'A': ckey = KEY_SIGMA; break;
+                case 'V': ckey = KEY_INV; break;
+                case 'Q': ckey = KEY_SQRT; break;
+                case 'O': ckey = KEY_LOG; break;
+                case 'L': ckey = KEY_LN; break;
+                case 'X': ckey = KEY_XEQ; break;
+                case 'M': ckey = KEY_STO; break;
+                case 'R': ckey = KEY_RCL; break;
+                case 'D': ckey = KEY_RDN; break;
+                case 'S': ckey = KEY_SIN; break;
+                case 'C': ckey = KEY_COS; break;
+                case 'T': ckey = KEY_TAN; break;
+                case 'W': ckey = KEY_SWAP; break;
+                case 'N': ckey = KEY_CHS; break;
+                case 'E': ckey = KEY_E; break;
+                //case '?': ckey = KEY_UP; break;
+                case '7': ckey = KEY_7; break;
+                case '8': ckey = KEY_8; break;
+                case '9': ckey = KEY_9; break;
+                case '/': ckey = KEY_DIV; break;
+                //case '?': ckey = KEY_DOWN; break;
+                case '4': ckey = KEY_4; break;
+                case '5': ckey = KEY_5; break;
+                case '6': ckey = KEY_6; break;
+                case '*': ckey = KEY_MUL; break;
+                //case '?': ckey = KEY_SHIFT; break;
+                case '1': ckey = KEY_1; break;
+                case '2': ckey = KEY_2; break;
+                case '3': ckey = KEY_3; break;
+                case '-': ckey = KEY_SUB; break;
+                //case '?': ckey = KEY_EXIT; break;
+                case '0': ckey = KEY_0; break;
+                case '.': ckey = KEY_DOT; break;
+                case '\\': ckey = KEY_RUN; break;
+                case '+': ckey = KEY_ADD; break;
+                default: squeak(); return;
+            }
+        }
         goto do_key;
     } else if ([s length] < 1) {
         ckey = KEY_BSP;
@@ -723,7 +755,25 @@ static CLLocationManager *locMgr = nil;
     macro = NULL;
     shell_keydown();
     shell_keyup();
-    [alphaField resignFirstResponder];
+    [self updateKeyboardState];
+}
+
+- (void) setActive:(bool) active {
+    viewActive = active;
+    [self updateKeyboardState];
+}
+
+- (void) updateKeyboardState {
+    bool oldKeyboardActive = keyboardActive;
+    keyboardActive = viewActive && (state.keyboardMode == 2 || (state.keyboardMode == 1 && core_alpha_menu()));
+    if (keyboardActive != oldKeyboardActive) {
+        if (keyboardActive) {
+            alphaField.text = @"x";
+            [alphaField becomeFirstResponder];
+        } else {
+            [alphaField resignFirstResponder];
+        }
+    }
 }
 
 @end
@@ -822,7 +872,10 @@ static void init_shell_state(int version) {
             core_settings.allow_big_stack = false;
             /* fall through */
         case 9:
-            /* current version (SHELL_VERSION = 9),
+            state.keyboardMode = 0;
+            /* fall through */
+        case 10:
+            /* current version (SHELL_VERSION = 10),
              * so nothing to do here since everything
              * was initialized from the state file.
              */
@@ -999,6 +1052,7 @@ static int write_shell_state() {
 void shell_blitter(const char *bits, int bytesperline, int x, int y, int width, int height) {
     TRACE("shell_blitter");
     skin_display_blitter(bits, bytesperline, x, y, width, height, calcView);
+    [calcView updateKeyboardState];
 }
 
 const char *shell_platform() {

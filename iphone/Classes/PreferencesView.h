@@ -26,6 +26,7 @@
     UISwitch *alwaysOnSwitch;
     UISlider *keyClicksSlider;
     UISlider *hapticFeedbackSlider;
+    UISegmentedControl *keyboardModeSelector;
     UISegmentedControl *orientationSelector;
     UISwitch *maintainSkinAspectSwitch;
     UISwitch *printToTextSwitch;
@@ -46,6 +47,7 @@
 @property (nonatomic, retain) IBOutlet UISwitch *alwaysOnSwitch;
 @property (nonatomic, retain) IBOutlet UISlider *keyClicksSlider;
 @property (nonatomic, retain) IBOutlet UISlider *hapticFeedbackSlider;
+@property (nonatomic, retain) IBOutlet UISegmentedControl *keyboardModeSelector;
 @property (nonatomic, retain) IBOutlet UISegmentedControl *orientationSelector;
 @property (nonatomic, retain) IBOutlet UISwitch *maintainSkinAspectSwitch;
 @property (nonatomic, retain) IBOutlet UISwitch *printToTextSwitch;

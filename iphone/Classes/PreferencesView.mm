@@ -34,6 +34,7 @@
 @synthesize alwaysOnSwitch;
 @synthesize keyClicksSlider;
 @synthesize hapticFeedbackSlider;
+@synthesize keyboardModeSelector;
 @synthesize orientationSelector;
 @synthesize maintainSkinAspectSwitch;
 @synthesize printToTextSwitch;
@@ -76,6 +77,7 @@
     [alwaysOnSwitch setOn:shell_always_on(-1)];
     [keyClicksSlider setValue:state.keyClicks];
     [hapticFeedbackSlider setValue:state.hapticFeedback];
+    [keyboardModeSelector setSelectedSegmentIndex:state.keyboardMode];
     [orientationSelector setSelectedSegmentIndex:state.orientationMode];
     [maintainSkinAspectSwitch setOn:state.maintainSkinAspect[[CalcView isPortrait] ? 0 : 1] != 0];
     [printToTextSwitch setOn:(state.printerToTxtFile != 0)];
@@ -203,6 +205,7 @@
     if (oldBigStack != core_settings.allow_big_stack)
         core_update_allow_big_stack();
     shell_always_on(alwaysOnSwitch.on);
+    state.keyboardMode = (int) keyboardModeSelector.selectedSegmentIndex;
     state.orientationMode = (int) orientationSelector.selectedSegmentIndex;
     int isPortrait = [CalcView isPortrait] ? 0 : 1;
     int maintainSkinAspect = maintainSkinAspectSwitch.on ? 1 : 0;
