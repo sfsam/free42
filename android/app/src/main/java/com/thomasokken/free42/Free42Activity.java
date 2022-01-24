@@ -76,15 +76,22 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
+import android.text.Editable;
+import android.text.InputType;
 import android.text.SpannableString;
+import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.text.util.Linkify;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnKeyListener;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
@@ -102,7 +109,7 @@ public class Free42Activity extends Activity {
 
     public static final String[] builtinSkinNames = new String[] { "Standard", "Landscape" };
     
-    private static final int SHELL_VERSION = 18;
+    private static final int SHELL_VERSION = 19;
     
     private static final int PRINT_BACKGROUND_COLOR = Color.LTGRAY;
     
@@ -115,6 +122,7 @@ public class Free42Activity extends Activity {
     }
     
     private CalcView calcView;
+    private CalcViewContainer calcViewContainer;
     private SkinLayout skin;
     private View printView;
     private PrintPaperView printPaperView;
@@ -163,6 +171,7 @@ public class Free42Activity extends Activity {
     private boolean alwaysRepaintFullDisplay = false;
     private int keyClicksLevel = 3;
     private int keyVibration = 0;
+    private int keyboardMode = 0;
     private int preferredOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
     private int style = 0;
     
@@ -314,8 +323,9 @@ public class Free42Activity extends Activity {
         orientation = conf.orientation == Configuration.ORIENTATION_LANDSCAPE ? 1 : 0;
         
         mainHandler = new Handler();
-        calcView = new CalcView(this);
-        setContentView(calcView);
+        calcViewContainer = new CalcViewContainer(this);
+        calcView = calcViewContainer.getCalcView();
+        setContentView(calcViewContainer);
 
         LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         printView = inflater.inflate(R.layout.print_view, null);
@@ -766,7 +776,7 @@ public class Free42Activity extends Activity {
     
     private void doFlipCalcPrintout() {
         printViewShowing = !printViewShowing;
-        setContentView(printViewShowing ? printView : calcView);
+        setContentView(printViewShowing ? printView : calcViewContainer);
     }
     
     private void doImport() {
@@ -970,6 +980,7 @@ public class Free42Activity extends Activity {
         preferencesDialog.setAlwaysOn(shell_always_on(-1));
         preferencesDialog.setKeyClicks(keyClicksLevel);
         preferencesDialog.setKeyVibration(keyVibration);
+        preferencesDialog.setKeyboardMode(keyboardMode);
         preferencesDialog.setOrientation(preferredOrientation);
         preferencesDialog.setStyle(style);
         preferencesDialog.setDisplayFullRepaint(alwaysRepaintFullDisplay);
@@ -998,6 +1009,7 @@ public class Free42Activity extends Activity {
         shell_always_on(preferencesDialog.getAlwaysOn() ? 1 : 0);
         keyClicksLevel = preferencesDialog.getKeyClicks();
         keyVibration = preferencesDialog.getKeyVibration();
+        keyboardMode = preferencesDialog.getKeyboardMode();
         int oldOrientation = preferredOrientation;
         preferredOrientation = preferencesDialog.getOrientation();
         style = preferencesDialog.getStyle();
@@ -1134,6 +1146,91 @@ public class Free42Activity extends Activity {
             }
         }
     }
+
+    private class CalcViewContainer extends ViewGroup {
+        private CalcView calcView;
+        private EditText alphaTextTF;
+
+        public CalcViewContainer(Context context) {
+            super(context);
+            calcView = new CalcView(context);
+            // so the focus has somewhere to go when we remove it from alphaTextTF
+            calcView.setFocusable(true);
+            try {
+                Method m = calcView.getClass().getMethod("setDefaultFocusHighlightEnabled", new Class[] { boolean.class });
+                m.invoke(calcView, new Object[] { false });
+            } catch (Exception e) {}
+            addView(calcView);
+            alphaTextTF = new EditText(Free42Activity.this);
+            alphaTextTF.setBottom(-100);
+            alphaTextTF.setInputType(InputType.TYPE_NULL | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);
+            alphaTextTF.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                public void onFocusChange(View v, boolean hasFocus) {
+                    setImeVisibility(hasFocus);
+                }
+            });
+            alphaTextTF.addTextChangedListener(new TextWatcher() {
+                boolean active = false;
+                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+                public void afterTextChanged(Editable text) {
+                    if (active)
+                        return;
+                    active = true;
+                    if (text.length() == 0) {
+                        core_keydown(17, null, null, true);
+                        core_keyup();
+                        text.append('x');
+                    } else if (text.length() > 1) {
+                        char c = text.charAt(text.length() - 1);
+                        if (c >= 32 && c <= 126) {
+                            core_keydown(c + 1024, null, null, true);
+                            core_keyup();
+                        }
+                        text.delete(text.length() - 1, text.length());
+                    }
+                    active = false;
+                }
+            });
+            addView(alphaTextTF);
+        }
+
+        public CalcView getCalcView() {
+            return calcView;
+        }
+
+        private Runnable mShowImeRunnable = new Runnable() {
+            public void run() {
+                InputMethodManager imm = (InputMethodManager) getContext()
+                        .getSystemService(Context.INPUT_METHOD_SERVICE);
+
+                if (imm != null) {
+                    imm.showSoftInput(alphaTextTF, 0);
+                }
+            }
+        };
+
+        private void setImeVisibility(final boolean visible) {
+            if (visible) {
+                post(mShowImeRunnable);
+            } else {
+                removeCallbacks(mShowImeRunnable);
+                InputMethodManager imm = (InputMethodManager) getContext()
+                        .getSystemService(Context.INPUT_METHOD_SERVICE);
+
+                if (imm != null) {
+                    imm.hideSoftInputFromWindow(getWindowToken(), 0);
+                }
+            }
+        }
+
+        @Override
+        protected void onLayout(boolean b, int left, int top, int right, int bottom) {
+            calcView.layout(left, top, right, bottom);
+            alphaTextTF.layout(0, -100, 200, -80);
+        }
+    }
+
     /**
      * This class is calculator view used by the Free42 Activity.
      * Note that most of the heavy lifting takes place in the
@@ -1144,12 +1241,12 @@ public class Free42Activity extends Activity {
         private int width, height;
         private float hScale, vScale;
         private int hOffset, vOffset;
-        private boolean possibleMenuEvent = false;
+        private int possibleControlEvent = 0;
 
         public CalcView(Context context) {
             super(context);
         }
-        
+
         public void updateScale() {
             vScale = ((float) height) / skin.getHeight();
             hScale = ((float) width) / skin.getWidth();
@@ -1197,8 +1294,9 @@ public class Free42Activity extends Activity {
                 int skey = skeyHolder.value;
                 ckey = ckeyHolder.value;
                 if (ckey == 0) {
-                    if (skin.in_menu_area(x, y))
-                        this.possibleMenuEvent = true;
+                    int m = skin.in_control_area(x, y);
+                    if (m != 0)
+                        this.possibleControlEvent = m;
                     return true;
                 }
                 click();
@@ -1252,12 +1350,25 @@ public class Free42Activity extends Activity {
                         mainHandler.postDelayed(timeout1Caller, 250);
                 }
             } else {
-                if (possibleMenuEvent) {
-                    possibleMenuEvent = false;
+                if (possibleControlEvent != 0) {
                     int x = (int) ((e.getX() - hOffset) / hScale);
                     int y = (int) ((e.getY() - vOffset) / vScale);
-                    if (skin.in_menu_area(x, y))
-                        Free42Activity.this.postMainMenu();
+                    int m = skin.in_control_area(x, y);
+                    if (m == possibleControlEvent)
+                        if (m == 1) {
+                            Free42Activity.this.postMainMenu();
+                        } else {
+                            CalcViewContainer c = (CalcViewContainer) this.getParent();
+                            if (c.alphaTextTF.hasFocus()) {
+                                c.alphaTextTF.clearFocus();
+                                c.setImeVisibility(false);
+                            } else {
+                                c.alphaTextTF.setText("x");
+                                c.alphaTextTF.requestFocus();
+                                c.setImeVisibility(true);
+                            }
+                        }
+                    possibleControlEvent = 0;
                 }
                 ckey = 0;
                 Rect inval = skin.set_active_key(-1);
@@ -1731,6 +1842,10 @@ public class Free42Activity extends Activity {
                 externalSkinName[1] = externalSkinName[0];
                 keyClicksLevel = 3;
             }
+            if (shell_version >= 20)
+                keyboardMode = state_read_int();
+            else
+                keyboardMode = 0;
             if (shell_version >= 5)
                 preferredOrientation = state_read_int();
             else
@@ -1856,7 +1971,10 @@ public class Free42Activity extends Activity {
             putCoreSettings(cs);
             // fall through
         case 18:
-            // current version (SHELL_VERSION = 18),
+            keyboardMode = 0;
+            // fall through
+        case 19:
+            // current version (SHELL_VERSION = 19),
             // so nothing to do here since everything
             // was initialized from the state file.
             ;
@@ -1878,6 +1996,7 @@ public class Free42Activity extends Activity {
             state_write_string(skinName[1]);
             state_write_string(externalSkinName[1]);
             state_write_int(keyClicksLevel);
+            state_write_int(keyboardMode);
             state_write_int(preferredOrientation);
             state_write_boolean(skinSmoothing[0]);
             state_write_boolean(displaySmoothing[0]);

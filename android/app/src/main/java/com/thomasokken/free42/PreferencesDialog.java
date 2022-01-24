@@ -70,6 +70,7 @@ public class PreferencesDialog extends Dialog {
     private CheckBox alwaysOnCB;
     private SeekBar keyClicksSB;
     private SeekBar hapticSB;
+    private Spinner keyboardModeSP;
     private Spinner orientationSP;
     private Spinner styleSP;
     private CheckBox maintainSkinAspectCB;
@@ -141,14 +142,20 @@ public class PreferencesDialog extends Dialog {
                 // ignore
             }
         });
+
+        keyboardModeSP = (Spinner) findViewById(R.id.keyboardModeSpinner);
+        String[] values = new String[] { "Off", "ALPHA", "On" };
+        ArrayAdapter<String> aa = new ArrayAdapter<String>(context, android.R.layout.simple_spinner_item, values);
+        keyboardModeSP.setAdapter(aa);
+
         orientationSP = (Spinner) findViewById(R.id.orientationSpinner);
-        String[] values;
         if (reversePortraitSupported)
             values = new String[] { "Automatic", "Portrait", "Reverse Portrait", "Landscape" };
         else
             values = new String[] { "Automatic", "Portrait", "Landscape" };
-        ArrayAdapter<String> aa = new ArrayAdapter<String>(context, android.R.layout.simple_spinner_item, values);
+        aa = new ArrayAdapter<String>(context, android.R.layout.simple_spinner_item, values);
         orientationSP.setAdapter(aa);
+
         styleSP = (Spinner) findViewById(R.id.styleSpinner);
         if (immersiveModeSupported)
             values = new String[] { "Normal", "No Status", "Full Screen" };
@@ -283,7 +290,15 @@ public class PreferencesDialog extends Dialog {
     public int getKeyVibration() {
         return hapticSB.getProgress();
     }
-    
+
+    public void setKeyboardMode(int keyboardMode) {
+        keyboardModeSP.setSelection(keyboardMode);
+    }
+
+    public int getKeyboardMode() {
+        return keyboardModeSP.getSelectedItemPosition();
+    }
+
     public void setOrientation(int orientation) {
         if (reversePortraitSupported) {
             if (orientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
@@ -304,7 +319,7 @@ public class PreferencesDialog extends Dialog {
         }
         orientationSP.setSelection(orientation);
     }
-    
+
     public int getOrientation() {
         int orientation = orientationSP.getSelectedItemPosition();
         if (reversePortraitSupported)
@@ -321,7 +336,7 @@ public class PreferencesDialog extends Dialog {
                 case 0: default: return ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
             }
     }
-    
+
     public void setStyle(int style) {
         if (style == 2 && !immersiveModeSupported)
             style = 1;

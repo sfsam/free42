@@ -390,8 +390,10 @@ public class SkinLayout {
             return null;
     }
     
-    public boolean in_menu_area(int x, int y) {
-        return y < display_loc.y + display_scale.y * 8;
+    public int in_control_area(int x, int y) {
+        if (y >= display_loc.y + display_scale.y * 8)
+            return 0;
+        return x < skin.width * display_scale.x / 8 ? 2 : 1;
     }
 
     public void find_key(boolean menu_active, int x, int y, IntHolder skey, IntHolder ckey) {

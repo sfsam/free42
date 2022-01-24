@@ -103,9 +103,24 @@
 
             </LinearLayout>
 
-            <LinearLayout android:id="@+id/orientationBox"
+            <LinearLayout android:id="@+id/keyboardModeBox"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:layout_below="@+id/hapticBox"
+                android:layout_alignParentLeft="true"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="System Keyboard"/>
+
+                <Spinner android:id="@+id/keyboardModeSpinner"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/orientationBox"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_below="@+id/keyboardModeBox"
                 android:layout_alignParentLeft="true"
                 android:orientation="horizontal">
 
