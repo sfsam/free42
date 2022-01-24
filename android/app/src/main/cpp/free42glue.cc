@@ -370,6 +370,20 @@ Java_com_thomasokken_free42_Free42Activity_setAlwaysRepaintFullDisplay(JNIEnv *e
     alwaysRepaintFullDisplay = repaintFull;
 }
 
+extern "C" jbyteArray
+Java_com_thomasokken_free42_Free42Activity_ascii2hp(JNIEnv *env, jobject thiz, jstring src) {
+    Tracer T("ascii2hp");
+    const char *buf = env->GetStringUTFChars(src, NULL);
+    int dstsize = strlen(buf) + 5;
+    char *dst = (char *) malloc(dstsize);
+    int dstlen = ascii2hp(dst, dstsize, buf);
+    env->ReleaseStringUTFChars(src, buf);
+    jbyteArray arr = env->NewByteArray(dstlen);
+    env->SetByteArrayRegion(arr, 0, dstlen, (const jbyte *) dst);
+    free(dst);
+    return arr;
+}
+
 
 /***************************************************************/
 /* Here followeth the implementation of the shell.h interface. */

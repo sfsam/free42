@@ -1178,17 +1178,20 @@ public class Free42Activity extends Activity {
                     if (active)
                         return;
                     active = true;
-                    if (text.length() == 0) {
+                    int tlen = text.length();
+                    if (tlen == 0) {
                         core_keydown(17, null, null, true);
                         core_keyup();
                         text.append('x');
-                    } else if (text.length() > 1) {
-                        char c = text.charAt(text.length() - 1);
-                        if (c >= 32 && c <= 126) {
+                    } else if (tlen > 1) {
+                        String s = text.subSequence(tlen - 1, tlen).toString();
+                        byte[] b = ascii2hp(s);
+                        int c = b[0] & 255;
+                        if (c != 31 || s.charAt(0) == 0x2022) {
                             core_keydown(c + 1024, null, null, true);
                             core_keyup();
                         }
-                        text.delete(text.length() - 1, text.length());
+                        text.delete(tlen - 1, tlen);
                     }
                     active = false;
                 }
@@ -2203,6 +2206,7 @@ public class Free42Activity extends Activity {
     private native boolean program_running();
     private native void setAlwaysRepaintFullDisplay(boolean alwaysRepaint);
     private native void core_update_allow_big_stack();
+    private native byte[] ascii2hp(String src);
 
     private static class CoreSettings {
         public boolean matrix_singularmatrix;
