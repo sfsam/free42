@@ -712,7 +712,6 @@ bool keyboardActive = false;
         } else {
             bool shift = false;
             switch (hc) {
-                // TODO: Proper shift handling; some way to map G and P
                 case 'A': ckey = KEY_SIGMA; break;
                 case 'a': ckey = KEY_SIGMA; shift = true; break;
                 case 'V': ckey = KEY_INV; break;

@@ -114,6 +114,44 @@ public class Free42Activity extends Activity {
     private static final int PRINT_BACKGROUND_COLOR = Color.LTGRAY;
     
     private static final int MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
+
+    private static final int KEY_SIGMA = 1;
+    private static final int KEY_INV = 2;
+    private static final int KEY_SQRT = 3;
+    private static final int KEY_LOG = 4;
+    private static final int KEY_LN = 5;
+    private static final int KEY_XEQ = 6;
+    private static final int KEY_STO = 7;
+    private static final int KEY_RCL = 8;
+    private static final int KEY_RDN = 9;
+    private static final int KEY_SIN = 10;
+    private static final int KEY_COS = 11;
+    private static final int KEY_TAN = 12;
+    private static final int KEY_ENTER = 13;
+    private static final int KEY_SWAP = 14;
+    private static final int KEY_CHS = 15;
+    private static final int KEY_E = 16;
+    private static final int KEY_BSP = 17;
+    private static final int KEY_UP = 18;
+    private static final int KEY_7 = 19;
+    private static final int KEY_8 = 20;
+    private static final int KEY_9 = 21;
+    private static final int KEY_DIV = 22;
+    private static final int KEY_DOWN = 23;
+    private static final int KEY_4 = 24;
+    private static final int KEY_5 = 25;
+    private static final int KEY_6 = 26;
+    private static final int KEY_MUL = 27;
+    private static final int KEY_SHIFT = 28;
+    private static final int KEY_1 = 29;
+    private static final int KEY_2 = 30;
+    private static final int KEY_3 = 31;
+    private static final int KEY_SUB = 32;
+    private static final int KEY_EXIT = 33;
+    private static final int KEY_0 = 34;
+    private static final int KEY_DOT = 35;
+    private static final int KEY_RUN = 36;
+    private static final int KEY_ADD = 37;
     
     public static Free42Activity instance;
     
@@ -1167,7 +1205,7 @@ public class Free42Activity extends Activity {
             alphaTextTF.setInputType(InputType.TYPE_NULL | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);
             alphaTextTF.setOnFocusChangeListener(new View.OnFocusChangeListener() {
                 public void onFocusChange(View v, boolean hasFocus) {
-                    setImeVisibility(hasFocus);
+                    setImeVisibility(hasFocus && keyboardMode == 1);
                 }
             });
             alphaTextTF.addTextChangedListener(new TextWatcher() {
@@ -1180,17 +1218,117 @@ public class Free42Activity extends Activity {
                     active = true;
                     int tlen = text.length();
                     if (tlen == 0) {
-                        core_keydown(17, null, null, true);
+                        core_keydown(KEY_BSP, null, null, true);
                         core_keyup();
                         text.append('x');
                     } else if (tlen > 1) {
                         String s = text.subSequence(tlen - 1, tlen).toString();
                         byte[] b = ascii2hp(s);
-                        int c = b[0] & 255;
-                        if (c != 31 || s.charAt(0) == 0x2022) {
-                            core_keydown(c + 1024, null, null, true);
-                            core_keyup();
+                        if (b.length == 0 || b[0] == 31 && s.charAt(0) != 0x2022) {
+                            playSound(10, 125);
+                            return;
                         }
+                        int hc = b[0] & 255;
+                        if (keyboardMode == 2) {
+                            // The hardware keyboard does not appear to honor the 'capitalize'
+                            // setting, so we do it ourselves. That needs to be verified on
+                            // a physical device, though; all I have is the simulator.
+                            if (hc >= 'A' && hc <= 'Z')
+                                hc += 32;
+                            else if (hc >= 'a' && hc <= 'z')
+                                hc -= 32;
+                        }
+                        if (core_alpha_menu()) {
+                            core_keydown(1024 + hc, null, null, true);
+                        } else if (core_hex_menu() && hc >= 'A' && hc <= 'F') {
+                            core_keydown(hc - 'A' + 1, null, null, true);
+                        } else if (core_hex_menu() && hc >= 'a' && hc <= 'f') {
+                            core_keydown(hc - 'a' + 1, null, null, true);
+                        } else {
+                            boolean shift = false;
+                            int ckey;
+                            switch (hc) {
+                                case 'A': ckey = KEY_SIGMA; break;
+                                case 'a': ckey = KEY_SIGMA; shift = true; break;
+                                case 'V': ckey = KEY_INV; break;
+                                case 'v': ckey = KEY_INV; shift = true; break;
+                                case 'Q': ckey = KEY_SQRT; break;
+                                case 'q': ckey = KEY_SQRT; shift = true; break;
+                                case 'O': ckey = KEY_LOG; break;
+                                case 'o': ckey = KEY_LOG; shift = true; break;
+                                case 'L': ckey = KEY_LN; break;
+                                case 'l': ckey = KEY_LN; shift = true; break;
+                                case 'X': ckey = KEY_XEQ; break;
+                                case 'G':
+                                case 'x': ckey = KEY_XEQ; shift = true; break;
+                                case 'M': ckey = KEY_STO; break;
+                                case 'm': ckey = KEY_STO; shift = true; break;
+                                case 'R': ckey = KEY_RCL; break;
+                                case 'r': ckey = KEY_RCL; shift = true; break;
+                                case 'D': ckey = KEY_RDN; break;
+                                case 'P':
+                                case 'd': ckey = KEY_RDN; shift = true; break;
+                                case 'S': ckey = KEY_SIN; break;
+                                case 's': ckey = KEY_SIN; shift = true; break;
+                                case 'C': ckey = KEY_COS; break;
+                                case 'c': ckey = KEY_COS; shift = true; break;
+                                case 'T': ckey = KEY_TAN; break;
+                                case 't': ckey = KEY_TAN; shift = true; break;
+                                case 'W': ckey = KEY_SWAP; break;
+                                case 'w': ckey = KEY_SWAP; shift = true; break;
+                                case 'N': ckey = KEY_CHS; break;
+                                case 'n': ckey = KEY_CHS; shift = true; break;
+                                case 'E': ckey = KEY_E; break;
+                                case 'e': ckey = KEY_E; shift = true; break;
+                                //case '?': ckey = KEY_UP; break;
+                                //case '?': ckey = KEY_UP; shift = true; break;
+                                case '7': ckey = KEY_7; break;
+                                case '^': ckey = KEY_7; shift = true; break;
+                                case '8': ckey = KEY_8; break;
+                                //case '?': ckey = KEY_8; shift = true; break;
+                                case '9': ckey = KEY_9; break;
+                                //case '?': ckey = KEY_9; shift = true; break;
+                                case '/': ckey = KEY_DIV; break;
+                                //case '?': ckey = KEY_DIV; shift = true; break;
+                                //case '?': ckey = KEY_DOWN; break;
+                                //case '?': ckey = KEY_DOWN; shift = true; break;
+                                case '4': ckey = KEY_4; break;
+                                case '}': ckey = KEY_4; shift = true; break;
+                                case '5': ckey = KEY_5; break;
+                                case '#': ckey = KEY_5; shift = true; break;
+                                case '6': ckey = KEY_6; break;
+                                case '%': ckey = KEY_6; shift = true; break;
+                                case '*': ckey = KEY_MUL; break;
+                                //case '?': ckey = KEY_MUL; shift = true; break;
+                                //case '?': ckey = KEY_SHIFT; break;
+                                //case '?': ckey = KEY_SHIFT; shift = true; break;
+                                case '1': ckey = KEY_1; break;
+                                case '[': ckey = KEY_1; shift = true; break;
+                                case '2': ckey = KEY_2; break;
+                                case ']': ckey = KEY_2; shift = true; break;
+                                case '3': ckey = KEY_3; break;
+                                case '{': ckey = KEY_3; shift = true; break;
+                                case '-': ckey = KEY_SUB; break;
+                                case '_': ckey = KEY_SUB; shift = true; break;
+                                //case '?': ckey = KEY_EXIT; break;
+                                //case '?': ckey = KEY_EXIT; shift = true; break;
+                                case '0': ckey = KEY_0; break;
+                                case '=': ckey = KEY_0; shift = true; break;
+                                case '.': ckey = KEY_DOT; break;
+                                //case '?': ckey = KEY_DOT; shift = true; break;
+                                case '\\': ckey = KEY_RUN; break;
+                                //case '?': ckey = KEY_RUN; shift = true; break;
+                                case '+': ckey = KEY_ADD; break;
+                                //case '?': ckey = KEY_ADD; shift = true; break;
+                                default: playSound(10, 125); return;
+                            }
+                            if (shift) {
+                                core_keydown(KEY_SHIFT, null, null, true);
+                                core_keyup();
+                            }
+                            core_keydown(ckey, null, null, true);
+                        }
+                        core_keyup();
                         text.delete(tlen - 1, tlen);
                     }
                     active = false;
@@ -1198,10 +1336,12 @@ public class Free42Activity extends Activity {
             });
             alphaTextTF.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
-                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    core_keydown(13, null, null, true);
-                    core_keyup();
-                    return false;
+                public boolean onEditorAction(TextView textView, int i, KeyEvent evt) {
+                    if (evt.getAction() == KeyEvent.ACTION_DOWN) {
+                        core_keydown(KEY_ENTER, null, null, true);
+                        core_keyup();
+                    }
+                    return keyboardMode == 2;
                 }
             });
             addView(alphaTextTF);
@@ -1253,7 +1393,7 @@ public class Free42Activity extends Activity {
                 } else {
                     alphaTextTF.setText("x");
                     alphaTextTF.requestFocus();
-                    setImeVisibility(true);
+                    setImeVisibility(keyboardMode == 1);
                 }
             }
         }
@@ -1394,7 +1534,7 @@ public class Free42Activity extends Activity {
                             } else {
                                 c.alphaTextTF.setText("x");
                                 c.alphaTextTF.requestFocus();
-                                c.setImeVisibility(true);
+                                c.setImeVisibility(keyboardMode == 1);
                                 c.keyboardActive = true;
                             }
                         }
