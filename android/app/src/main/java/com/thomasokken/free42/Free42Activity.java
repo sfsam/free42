@@ -1150,6 +1150,7 @@ public class Free42Activity extends Activity {
     private class CalcViewContainer extends ViewGroup {
         private CalcView calcView;
         private EditText alphaTextTF;
+        boolean keyboardActive = false;
 
         public CalcViewContainer(Context context) {
             super(context);
@@ -1192,6 +1193,14 @@ public class Free42Activity extends Activity {
                     active = false;
                 }
             });
+            alphaTextTF.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                    core_keydown(13, null, null, true);
+                    core_keyup();
+                    return false;
+                }
+            });
             addView(alphaTextTF);
         }
 
@@ -1228,6 +1237,22 @@ public class Free42Activity extends Activity {
         protected void onLayout(boolean b, int left, int top, int right, int bottom) {
             calcView.layout(left, top, right, bottom);
             alphaTextTF.layout(0, -100, 200, -80);
+        }
+
+        public void updateKeyboardState() {
+            boolean oldKeyboardActive = keyboardActive;
+            keyboardActive = Free42Activity.this.keyboardMode == 2
+                    || Free42Activity.this.keyboardMode == 1 && core_alpha_menu();
+            if (keyboardActive != oldKeyboardActive) {
+                if (alphaTextTF.hasFocus()) {
+                    alphaTextTF.clearFocus();
+                    setImeVisibility(false);
+                } else {
+                    alphaTextTF.setText("x");
+                    alphaTextTF.requestFocus();
+                    setImeVisibility(true);
+                }
+            }
         }
     }
 
@@ -1362,10 +1387,12 @@ public class Free42Activity extends Activity {
                             if (c.alphaTextTF.hasFocus()) {
                                 c.alphaTextTF.clearFocus();
                                 c.setImeVisibility(false);
+                                c.keyboardActive = false;
                             } else {
                                 c.alphaTextTF.setText("x");
                                 c.alphaTextTF.requestFocus();
                                 c.setImeVisibility(true);
+                                c.keyboardActive = true;
                             }
                         }
                     possibleControlEvent = 0;
@@ -1842,7 +1869,7 @@ public class Free42Activity extends Activity {
                 externalSkinName[1] = externalSkinName[0];
                 keyClicksLevel = 3;
             }
-            if (shell_version >= 20)
+            if (shell_version >= 19)
                 keyboardMode = state_read_int();
             else
                 keyboardMode = 0;
@@ -2153,8 +2180,8 @@ public class Free42Activity extends Activity {
     private native void core_cleanup();
     private native void core_repaint_display();
     private native boolean core_menu();
-    //private native boolean core_alpha_menu();
-    //private native boolean core_hex_menu();
+    private native boolean core_alpha_menu();
+    private native boolean core_hex_menu();
     //private native int core_special_menu_key(int which);
     private native boolean core_keydown(int key, BooleanHolder enqueued, IntHolder repeat, boolean immediate_return);
     private native boolean core_keydown_command(String cmd, BooleanHolder enqueued, IntHolder repeat, boolean immediate_return);
@@ -2212,6 +2239,7 @@ public class Free42Activity extends Activity {
     public void shell_blitter(byte[] bits, int bytesperline, int x, int y, int width, int height) {
         Rect inval = skin.display_blitter(bits, bytesperline, x, y, width, height);
         calcView.postInvalidateScaled(inval.left, inval.top, inval.right, inval.bottom);
+        calcViewContainer.updateKeyboardState();
     }
 
     /**
