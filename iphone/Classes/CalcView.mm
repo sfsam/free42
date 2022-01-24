@@ -290,8 +290,21 @@ static CGPoint touchPoint;
     if (ckey == 0) {
         skin_find_key(x, y, ann_shift != 0, &skey, &ckey);
         if (ckey == 0) {
-            if(skin_in_menu_area(x, y))
-                [self showMainMenu];
+            switch (skin_in_control_area(x, y)) {
+                case 1:
+                    [self showMainMenu];
+                    break;
+                case 2:
+                    if (alphaField.isFirstResponder) {
+                        [alphaField resignFirstResponder];
+                        keyboardActive = false;
+                    } else {
+                        alphaField.text = @"x";
+                        [alphaField becomeFirstResponder];
+                        keyboardActive = true;
+                    }
+                    break;
+            }
         } else {
             if (state.keyClicks > 0)
                 [RootViewController playSound:state.keyClicks + 10];
@@ -697,44 +710,92 @@ bool keyboardActive = false;
         } else if (core_hex_menu() && hc >= 'A' && hc <= 'F') {
             ckey = hc - 'A' + 1;
         } else {
+            bool shift = false;
             switch (hc) {
                 // TODO: Proper shift handling; some way to map G and P
                 case 'A': ckey = KEY_SIGMA; break;
+                case 'a': ckey = KEY_SIGMA; shift = true; break;
                 case 'V': ckey = KEY_INV; break;
+                case 'v': ckey = KEY_INV; shift = true; break;
                 case 'Q': ckey = KEY_SQRT; break;
+                case 'q': ckey = KEY_SQRT; shift = true; break;
                 case 'O': ckey = KEY_LOG; break;
+                case 'o': ckey = KEY_LOG; shift = true; break;
                 case 'L': ckey = KEY_LN; break;
+                case 'l': ckey = KEY_LN; shift = true; break;
                 case 'X': ckey = KEY_XEQ; break;
+                case 'G':
+                case 'x': ckey = KEY_XEQ; shift = true; break;
                 case 'M': ckey = KEY_STO; break;
+                case 'm': ckey = KEY_STO; shift = true; break;
                 case 'R': ckey = KEY_RCL; break;
+                case 'r': ckey = KEY_RCL; shift = true; break;
                 case 'D': ckey = KEY_RDN; break;
+                case 'P':
+                case 'd': ckey = KEY_RDN; shift = true; break;
                 case 'S': ckey = KEY_SIN; break;
+                case 's': ckey = KEY_SIN; shift = true; break;
                 case 'C': ckey = KEY_COS; break;
+                case 'c': ckey = KEY_COS; shift = true; break;
                 case 'T': ckey = KEY_TAN; break;
+                case 't': ckey = KEY_TAN; shift = true; break;
                 case 'W': ckey = KEY_SWAP; break;
+                case 'w': ckey = KEY_SWAP; shift = true; break;
                 case 'N': ckey = KEY_CHS; break;
+                case 'n': ckey = KEY_CHS; shift = true; break;
                 case 'E': ckey = KEY_E; break;
+                case 'e': ckey = KEY_E; shift = true; break;
                 //case '?': ckey = KEY_UP; break;
+                //case '?': ckey = KEY_UP; shift = true; break;
                 case '7': ckey = KEY_7; break;
+                case '^': ckey = KEY_7; shift = true; break;
                 case '8': ckey = KEY_8; break;
+                //case '?': ckey = KEY_8; shift = true; break;
                 case '9': ckey = KEY_9; break;
+                //case '?': ckey = KEY_9; shift = true; break;
                 case '/': ckey = KEY_DIV; break;
+                //case '?': ckey = KEY_DIV; shift = true; break;
                 //case '?': ckey = KEY_DOWN; break;
+                //case '?': ckey = KEY_DOWN; shift = true; break;
                 case '4': ckey = KEY_4; break;
+                case '}': ckey = KEY_4; shift = true; break;
                 case '5': ckey = KEY_5; break;
+                case '#': ckey = KEY_5; shift = true; break;
                 case '6': ckey = KEY_6; break;
+                case '%': ckey = KEY_6; shift = true; break;
                 case '*': ckey = KEY_MUL; break;
+                //case '?': ckey = KEY_MUL; shift = true; break;
                 //case '?': ckey = KEY_SHIFT; break;
+                //case '?': ckey = KEY_SHIFT; shift = true; break;
                 case '1': ckey = KEY_1; break;
+                case '[': ckey = KEY_1; shift = true; break;
                 case '2': ckey = KEY_2; break;
+                case ']': ckey = KEY_2; shift = true; break;
                 case '3': ckey = KEY_3; break;
+                case '{': ckey = KEY_3; shift = true; break;
                 case '-': ckey = KEY_SUB; break;
+                case '_': ckey = KEY_SUB; shift = true; break;
                 //case '?': ckey = KEY_EXIT; break;
+                //case '?': ckey = KEY_EXIT; shift = true; break;
                 case '0': ckey = KEY_0; break;
+                case '=': ckey = KEY_0; shift = true; break;
                 case '.': ckey = KEY_DOT; break;
+                //case '?': ckey = KEY_DOT; shift = true; break;
                 case '\\': ckey = KEY_RUN; break;
+                //case '?': ckey = KEY_RUN; shift = true; break;
                 case '+': ckey = KEY_ADD; break;
+                //case '?': ckey = KEY_ADD; shift = true; break;
                 default: squeak(); return;
+            }
+            if (shift) {
+                int saved_ckey = ckey;
+                ckey = KEY_SHIFT;
+                skey = -1;
+                macro = NULL;
+                shell_keydown();
+                shell_keyup();
+                alphaField.text = @"x";
+                ckey = saved_ckey;
             }
         }
         goto do_key;
