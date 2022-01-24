@@ -1337,7 +1337,7 @@ public class Free42Activity extends Activity {
             alphaTextTF.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent evt) {
-                    if (evt.getAction() == KeyEvent.ACTION_DOWN) {
+                    if (evt == null || evt.getAction() == KeyEvent.ACTION_DOWN) {
                         core_keydown(KEY_ENTER, null, null, true);
                         core_keyup();
                     }
